@@ -1,0 +1,57 @@
+<header class="header_section">
+  <div class="header_top">
+    <div class="container-fluid">
+      <div class="contact_link-container">
+        <a href="" class="contact_link1">
+          <i class="fa fa-map-marker" aria-hidden="true"></i>
+          <span> Lorem ipsum dolor sit amet, </span>
+        </a>
+        <a href="" class="contact_link2">
+          <i class="fa fa-phone" aria-hidden="true"></i>
+          <span> Llamenos : +55 5555 5555 </span>
+        </a>
+        <a href="" class="contact_link3">
+          <i class="fa fa-envelope" aria-hidden="true"></i>
+          <span> contacto&#64;gmail.com </span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="header_bottom">
+    <div class="container-fluid">
+      <nav class="navbar navbar-expand-lg custom_nav-container">
+        <a class="navbar-brand" href="index.html">
+          <span> <img src="assets/images/the-guard-logo2.png" alt="" width="20%"> </span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item" [class.active]="isActive('home')">
+              <a class="nav-link" href="#home" (click)="scrollToSection('home', $event)">Home</a>
+            </li>
+            <li class="nav-item" [class.active]="isActive('about')">
+              <a class="nav-link" href="#about" (click)="scrollToSection('about', $event)">Acerca</a>
+            </li>
+            <li class="nav-item" [class.active]="isActive('service')">
+              <a class="nav-link" href="#service" (click)="scrollToSection('service', $event)">Servicios</a>
+            </li>
+            <li class="nav-item" [class.active]="isActive('commitment')">
+              <a class="nav-link" href="#commitment" (click)="scrollToSection('commitment', $event)">Compromiso</a>
+            </li>
+            <li class="nav-item" [class.active]="isActive('guard')">
+              <a class="nav-link" href="#guard" (click)="scrollToSection('guard', $event)">Guardias</a>
+            </li>
+            <li class="nav-item" [class.active]="isActive('contact')">
+              <a class="nav-link" href="#contact" (click)="scrollToSection('contact', $event)">Contacto</a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+<!-- end header section -->

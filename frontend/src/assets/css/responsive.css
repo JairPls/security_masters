@@ -3,14 +3,20 @@
 @media (max-width: 992px) {
   .hero_area {
     min-height: auto;
-  }
-
-  .navbar-nav {
-    align-items: center;
+    margin-top: 0;
   }
 
   .custom_nav-container .navbar-toggler {
-    margin-bottom: 15px;
+    margin: 0;
+    order: 2;
+  }
+
+  .navbar-brand {
+    order: 1;
+  }
+
+  #navbarSupportedContent {
+    order: 3;
   }
 
   .custom_nav-container.navbar-expand-lg .navbar-nav .nav-item .nav-link {
