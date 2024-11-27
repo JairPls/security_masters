@@ -111,7 +111,6 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-
 }
 
 .hero_bg_box {
@@ -141,7 +140,11 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to right, rgba(0, 0, 0, .8), rgba(0, 0, 0, 0.35));
+    background: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.8),
+      rgba(0, 0, 0, 0.35)
+    );
   }
 }
 
@@ -213,19 +216,17 @@ body {
         color: $white;
         text-align: center;
         text-transform: uppercase;
-        transition: all .2s;
+        transition: all 0.2s;
       }
 
       &:hover,
       &.active {
         .nav-link {
           background-color: $primary1;
-
         }
       }
     }
   }
-
 }
 
 a,
@@ -309,9 +310,7 @@ a:focus {
       }
     }
   }
-
 }
-
 
 /*end header section*/
 
@@ -374,7 +373,8 @@ a:focus {
     }
   }
 
-  #carouselExampleIndicators {}
+  #carouselExampleIndicators {
+  }
 
   .idicator_container {
     position: relative;
@@ -396,7 +396,7 @@ a:focus {
       margin: 0 4px;
 
       &.active {
-        background-color: $white
+        background-color: $white;
       }
     }
   }
@@ -412,19 +412,17 @@ a:focus {
   }
 
   .img_container {
-
     .img-box {
       img {
         width: 100%;
       }
     }
-
   }
 
   .detail-box {
     background-color: $white;
     padding: 45px 25px;
-    box-shadow: 0 0 5px 0 rgba($color: #000000, $alpha: .05);
+    box-shadow: 0 0 5px 0 rgba($color: #000000, $alpha: 0.05);
     position: relative;
     margin-left: -45px;
 
@@ -437,8 +435,6 @@ a:focus {
       text-transform: uppercase;
     }
   }
-
-
 }
 
 // end about section
@@ -608,9 +604,7 @@ a:focus {
       font-weight: bold;
     }
   }
-
 }
-
 
 .contact_bg_box {
   position: absolute;
@@ -640,11 +634,13 @@ a:focus {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to right, rgba(0, 0, 0, .7), rgba(0, 0, 0, 0.35));
+    background: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.7),
+      rgba(0, 0, 0, 0.35)
+    );
   }
 }
-
-
 
 /* end contact section */
 
@@ -674,7 +670,7 @@ a:focus {
       padding: 25px 15px;
       text-align: center;
       bottom: 0;
-      background-color: rgba($color: $primary1, $alpha: .75);
+      background-color: rgba($color: $primary1, $alpha: 0.75);
     }
   }
 
@@ -691,14 +687,13 @@ a:focus {
 
 // end team section
 
-
 // info section
 .info_section {
   background-color: #101010;
   color: $white;
   padding: 75px 0 10px 0;
 
-  .row>div {
+  .row > div {
     margin-bottom: 25px;
   }
 
@@ -724,7 +719,6 @@ a:focus {
   }
 
   .info_links {
-
     ul {
       padding: 0;
 
@@ -787,14 +781,9 @@ a:focus {
       }
     }
   }
-
 }
 
 // end info section
-
-
-
-
 
 /* footer section*/
 
@@ -807,13 +796,23 @@ a:focus {
 }
 
 .footer_section p {
-  color: rgba($color: #fefeff, $alpha: .7);
+  color: rgba($color: #fefeff, $alpha: 0.7);
   margin: 0;
   text-align: center;
 }
 
 .footer_section a {
-  color: rgba($color: #fefeff, $alpha: .7);
+  color: rgba($color: #fefeff, $alpha: 0.7);
 }
 
 /* end footer section*/
+
+@import "animations";
+
+.animate {
+  visibility: hidden;
+
+  &.show {
+    visibility: visible;
+  }
+}
