@@ -1,0 +1,74 @@
+.quote_section {
+  background: linear-gradient(rgba(28, 28, 28, 0.9), rgba(28, 28, 28, 0.9)),
+    url("../../assets/images/choose-us-bg.jpg") center/cover;
+  padding: 80px 0;
+
+  .heading_container {
+    margin-bottom: 3rem;
+
+    h2,
+    p {
+      color: #ffffff;
+    }
+  }
+}
+
+.quote_form {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2.5rem;
+  border-radius: 15px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.1);
+
+  label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-control,
+  .form-select {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+
+    &:focus {
+      border-color: #9d36ff;
+      box-shadow: 0 0 0 0.2rem rgba(157, 54, 255, 0.25);
+    }
+  }
+}
+
+.quote_result {
+  .result_details {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+
+    .total-row {
+      font-size: 1.25rem;
+      color: #9d36ff;
+    }
+  }
+}
+
+.btn-primary {
+  background-color: #9d36ff;
+  border-color: #9d36ff;
+
+  &:hover {
+    background-color: #8929ff;
+    border-color: #8929ff;
+  }
+
+  &:disabled {
+    background-color: #b375ff;
+    border-color: #b375ff;
+  }
+}
+
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+
+  &:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+  }
+}

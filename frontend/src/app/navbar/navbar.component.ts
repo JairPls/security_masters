@@ -13,7 +13,7 @@ export class NavbarComponent {
 
   @HostListener('window:scroll', ['$event'])
   onWindowScroll() {
-    const sections = ['home', 'about', 'service', 'guard', 'contact'];
+    const sections = ['home', 'about', 'commitment', 'service', 'guard', 'contact', 'quote'];
     let currentSection = '';
     const scrollPosition = window.scrollY + 150;
 
