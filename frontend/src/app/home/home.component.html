@@ -675,67 +675,50 @@
         de México
       </p>
     </div>
-
     <div class="row justify-content-center">
       <div class="col-md-8">
         <div class="quote_form rounded-4">
           <form [formGroup]="quoteForm" (ngSubmit)="calculateQuote()">
+            <!-- Mapa -->
+            <div class="col-12 mb-4">
+              <div id="map" class="rounded-4"></div>
+            </div>
+
             <div class="row">
               <!-- Origen -->
               <div class="col-md-6 mb-3">
                 <label class="form-label">Origen</label>
-                <select class="form-select rounded-4" formControlName="origin">
-                  <option value="">Selecciona la zona de origen</option>
-                  <option *ngFor="let zone of zones" [value]="zone.id">
-                    {{ zone.name }}
-                  </option>
-                </select>
-                <div class="text-danger small" *ngIf="
-                        quoteForm.get('origin')?.touched &&
-                        quoteForm.get('origin')?.invalid
-                      ">
-                  Selecciona una zona de origen
+                <input type="text" class="form-control rounded-4" formControlName="origin"
+                  placeholder="Selecciona en el mapa el punto de origen" readonly>
+                <div class="text-danger small"
+                  *ngIf="quoteForm.get('origin')?.touched && quoteForm.get('origin')?.invalid">
+                  Selecciona un punto de origen en el mapa
                 </div>
               </div>
 
               <!-- Destino -->
               <div class="col-md-6 mb-3">
                 <label class="form-label">Destino</label>
-                <select class="form-select rounded-4" formControlName="destination">
-                  <option value="">Selecciona la zona de destino</option>
-                  <option *ngFor="let zone of zones" [value]="zone.id">
-                    {{ zone.name }}
-                  </option>
-                </select>
-                <div class="text-danger small" *ngIf="
-                        quoteForm.get('destination')?.touched &&
-                        quoteForm.get('destination')?.invalid
-                      ">
-                  Selecciona una zona de destino
+                <input type="text" class="form-control rounded-4" formControlName="destination"
+                  placeholder="Selecciona en el mapa el punto de destino" readonly>
+                <div class="text-danger small"
+                  *ngIf="quoteForm.get('destination')?.touched && quoteForm.get('destination')?.invalid">
+                  Selecciona un punto de destino en el mapa
                 </div>
               </div>
             </div>
 
-            <!-- Tipo de Servicio -->
+            <!-- Tipo de Vehículo -->
             <div class="mb-3">
-              <label class="form-label">Tipo de Servicio</label>
+              <label class="form-label">Tipo de Vehículo</label>
               <select class="form-select rounded-4" formControlName="serviceType">
-                <option value="">Selecciona el tipo de servicio</option>
-                <option value="basic">
-                  Básico (1 vehículo, 2 escoltas)
-                </option>
-                <option value="premium">
-                  Premium (2 vehículos, 4 escoltas)
-                </option>
-                <option value="executive">
-                  Ejecutivo (3 vehículos, 6 escoltas)
-                </option>
+                <option value="">Selecciona el tipo de vehículo</option>
+                <option value="suv">SUV de Lujo</option>
+                <option value="van">VAN de Lujo</option>
               </select>
-              <div class="text-danger small" *ngIf="
-                      quoteForm.get('serviceType')?.touched &&
-                      quoteForm.get('serviceType')?.invalid
-                    ">
-                Selecciona un tipo de servicio
+              <div class="text-danger small"
+                *ngIf="quoteForm.get('serviceType')?.touched && quoteForm.get('serviceType')?.invalid">
+                Selecciona un tipo de vehículo
               </div>
             </div>
 
@@ -744,72 +727,66 @@
               <div class="col-md-6 mb-3">
                 <label class="form-label">Fecha</label>
                 <input type="date" class="form-control rounded-4" formControlName="date" />
-                <div class="text-danger small" *ngIf="
-                        quoteForm.get('date')?.touched &&
-                        quoteForm.get('date')?.invalid
-                      ">
+                <div class="text-danger small" *ngIf="quoteForm.get('date')?.touched && quoteForm.get('date')?.invalid">
                   Selecciona una fecha
                 </div>
               </div>
               <div class="col-md-6 mb-3">
                 <label class="form-label">Hora</label>
                 <input type="time" class="form-control rounded-4" formControlName="time" />
-                <div class="text-danger small" *ngIf="
-                        quoteForm.get('time')?.touched &&
-                        quoteForm.get('time')?.invalid
-                      ">
+                <div class="text-danger small" *ngIf="quoteForm.get('time')?.touched && quoteForm.get('time')?.invalid">
                   Selecciona una hora
                 </div>
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 rounded-4">
-              Cotizar
+            <!-- Campos ocultos para coordenadas -->
+            <input type="hidden" formControlName="originCoords">
+            <input type="hidden" formControlName="destinationCoords">
+
+            <!-- Botón de cotizar -->
+            <button type="submit" class="btn btn-primary rounded-4 w-100" [disabled]="!quoteForm.valid">
+              Cotizar Servicio
             </button>
           </form>
-
-          <!-- Resultado de la cotización -->
-          <div class="quote_result mt-4" *ngIf="quoteResult">
-            <h3 class="text-center mb-4">Cotización Estimada</h3>
-            <div class="result_details p-4 rounded-4">
-              <div class="row mb-2">
-                <div class="col-8">Costo Base (4 horas):</div>
-                <div class="col-4 text-end">
-                  ${{ quoteResult.basePrice | number : "1.0-0" }} MXN
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-8">Cargo por Distancia:</div>
-                <div class="col-4 text-end">
-                  ${{ quoteResult.distanceCharge | number : "1.0-0" }} MXN
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-8">Cargo por Servicio:</div>
-                <div class="col-4 text-end">
-                  ${{ quoteResult.serviceCharge | number : "1.0-0" }} MXN
-                </div>
-              </div>
-              <div class="row mb-3" *ngIf="quoteResult.nightCharge > 0">
-                <div class="col-8">Cargo Nocturno:</div>
-                <div class="col-4 text-end">
-                  ${{ quoteResult.nightCharge | number : "1.0-0" }} MXN
-                </div>
-              </div>
-              <hr />
-              <div class="row total-row">
-                <div class="col-8"><strong>Total:</strong></div>
-                <div class="col-4 text-end">
-                  <strong>${{ quoteResult.total | number : "1.0-0" }} MXN</strong>
-                </div>
-              </div>
-              <button class="btn btn-success w-100 mt-4 rounded-4" (click)="requestQuote()">
-                Solicitar Servicio
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
+
+<!-- Mostrar resultado de la cotización -->
+<div *ngIf="quoteResult" class="mt-4">
+  <div class="quote_result">
+    <div class="result_details p-4 rounded-4">
+      <h4 class="mb-4 text-center">Detalles de tu Cotización</h4>
+
+      <div class="price_item mb-3 d-flex justify-content-between align-items-center">
+        <span>Tarifa base por tiempo</span>
+        <span class="price">${{quoteResult.basePrice}}</span>
+      </div>
+
+      <div class="price_item mb-3 d-flex justify-content-between align-items-center">
+        <span>Cargo por servicio</span>
+        <span class="price">${{quoteResult.serviceCharge}}</span>
+      </div>
+
+      <div *ngIf="quoteResult.distanceCharge > 0"
+        class="price_item mb-3 d-flex justify-content-between align-items-center">
+        <span>Cargo por tipo de vehículo</span>
+        <span class="price">${{quoteResult.distanceCharge}}</span>
+      </div>
+
+      <div *ngIf="quoteResult.nightCharge > 0"
+        class="price_item mb-3 d-flex justify-content-between align-items-center">
+        <span>Cargo por horario nocturno</span>
+        <span class="price">${{quoteResult.nightCharge}}</span>
+      </div>
+
+      <div class="total_price mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Total estimado</span>
+        <span class="price total">${{quoteResult.total}}</span>
+      </div>
+    </div>
+  </div>
+</div>
