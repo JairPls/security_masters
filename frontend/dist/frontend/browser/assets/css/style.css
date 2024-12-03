@@ -17,13 +17,48 @@
 }
 
 .quote_result .result_details {
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(157, 54, 255, 0.2);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.1);
+}
+
+.quote_result .price_item {
+  padding: 10px 0;
+  color: #555;
+}
+
+.quote_result .price {
+  font-weight: 500;
+  color: #333;
+}
+
+.quote_result .total_price {
+  font-size: 1.2em;
+}
+
+.quote_result .total_price .total {
+  color: #9d36ff;
+  font-weight: 600;
+  font-size: 1.3em;
 }
 
 .quote_result h4 {
   color: #9d36ff;
   font-weight: 600;
+  position: relative;
+  padding-bottom: 15px;
+}
+
+.quote_result h4::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: #9d36ff;
+  border-radius: 3px;
 }
 /* por que elegirnos */
 .choose_section {
@@ -1276,3 +1311,24 @@ a:focus {
 
 /* end footer section*/
 /*# sourceMappingURL=style.css.map */
+
+.time-popup .leaflet-popup-content-wrapper {
+  background: rgba(157, 54, 255, 0.9);
+  color: white;
+  border-radius: 20px;
+  padding: 5px 15px;
+}
+
+.time-popup .leaflet-popup-tip {
+  background: rgba(157, 54, 255, 0.9);
+}
+
+.estimated-time {
+  font-weight: 500;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+.estimated-time i {
+  margin-right: 5px;
+}
