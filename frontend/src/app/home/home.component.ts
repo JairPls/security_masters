@@ -1,71 +1,31 @@
+/// <reference types="google.maps" />
+
 import { Component, OnInit, AfterViewInit, PLATFORM_ID, Inject } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import type * as L from 'leaflet';
-
-interface Zone {
-  id: string;
-  name: string;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
-}
-
-interface QuoteResult {
-  basePrice: number;
-  distanceCharge: number;
-  serviceCharge: number;
-  nightCharge: number;
-  total: number;
-}
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-home',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss'],
-  styles: [`
-    :host ::ng-deep #map {
-      height: 400px;
-      width: 100%;
-      border-radius: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    :host ::ng-deep .leaflet-container {
-      z-index: 1;
-    }
-    :host ::ng-deep .leaflet-control-container {
-      z-index: 2;
-    }
-    :host ::ng-deep .custom-div-icon {
-      background: transparent;
-      border: none;
-    }
-  `]
+  styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit, AfterViewInit {
-  private L!: typeof L;
-  private map!: L.Map;
-  private mapInitialized = false;
+  map!: google.maps.Map;
   quoteForm: FormGroup;
-  quoteResult: QuoteResult | null = null;
+  quoteResult: any = null;
   estimatedTime: number = 0;
-  markers: any[] = [];
   isBrowser: boolean;
-
-  // Definir las constantes como propiedades de clase
+  basePrice: number = 0;
   private readonly BASE_RATE_PER_HOUR: number = 1500;
   private readonly FIXED_RATE: number = 800;
-
-  // Límites de CDMX (aproximados)
-  private readonly CDMX_BOUNDS = {
-    north: 19.6,
-    south: 19.1,
-    east: -98.9,
-    west: -99.4
-  };
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer();
+  originMarker: google.maps.Marker | null = null;
+  destinationMarker: google.maps.Marker | null = null;
+  selectionMode: 'origin' | 'destination' = 'origin';
+  private activeInfoWindow: google.maps.InfoWindow | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -83,214 +43,259 @@ export class HomeComponent implements OnInit, AfterViewInit {
     });
   }
 
-  ngOnInit() {
-    // Inicialización del formulario si es necesario
-  }
+  ngOnInit() { }
 
-  async ngAfterViewInit() {
-    if (this.isBrowser && !this.mapInitialized) {
-      await this.loadLeaflet();
-      this.initializeMap();
-      this.mapInitialized = true;
+  ngAfterViewInit() {
+    if (this.isBrowser) {
+      this.loadGoogleMapsScript().then(() => {
+        this.initializeMap();
+      }).catch(error => {
+        console.error('Error loading Google Maps script:', error);
+      });
     }
   }
 
-  private async loadLeaflet() {
-    if (!this.L) {
-      const L = await import('leaflet');
-      this.L = L.default;
-    }
+  private loadGoogleMapsScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (typeof google !== 'undefined') {
+        resolve();
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDaKW-fZH-NyQQw8Erkh_g3o-rbuIH_F-w&libraries=places&v=weekly';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject('Error loading Google Maps script');
+        document.head.appendChild(script);
+      }
+    });
   }
 
   private initializeMap() {
-    if (!this.isBrowser || !this.L || this.mapInitialized) return;
-
     const mapContainer = document.getElementById('map');
     if (!mapContainer) return;
 
-    mapContainer.innerHTML = '';
-
-    const cdmxCenter: [number, number] = [19.4326, -99.1332];
-    const maxBounds: L.LatLngBoundsLiteral = [
-      [this.CDMX_BOUNDS.south, this.CDMX_BOUNDS.west],
-      [this.CDMX_BOUNDS.north, this.CDMX_BOUNDS.east]
-    ];
-
-    this.map = this.L.map('map', {
-      center: cdmxCenter,
+    this.map = new google.maps.Map(mapContainer, {
+      center: { lat: 19.4326, lng: -99.1332 },
       zoom: 11,
-      minZoom: 10,
-      maxZoom: 18,
-      maxBounds: maxBounds,
-      maxBoundsViscosity: 1.0
-    });
-
-    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(this.map);
-
-    setTimeout(() => {
-      this.map.invalidateSize();
-    }, 100);
-
-    this.map.on('click', (e: any) => {
-      if (this.isPointInCDMX(e.latlng)) {
-        this.handleMapClick(e);
-      } else {
-        alert('Por favor selecciona un punto dentro de la Ciudad de México');
+      restriction: {
+        latLngBounds: {
+          north: 19.5928,
+          south: 19.1223,
+          west: -99.3643,
+          east: -98.9400
+        },
+        strictBounds: true
       }
     });
+
+    // Crear el panel de control personalizado
+    const controlDiv = document.createElement('div');
+    controlDiv.className = 'map-controls p-2 bg-white rounded-4 shadow-sm';
+    controlDiv.style.cssText = 'position: absolute; left: 10px; top: 10px; max-width: 320px; z-index: 1;';
+
+    // Estilos para los botones activos
+    const styleTag = document.createElement('style');
+    styleTag.textContent = `
+      .btn-map.active {
+        background-color: #9d36ff !important;
+        border-color: #9d36ff !important;
+        color: white !important;
+      }
+      .btn-map {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+        transition: all 0.3s ease;
+      }
+      .btn-map:hover:not(.active) {
+        background-color: #f8f9fa;
+        border-color: #9d36ff;
+        color: #9d36ff;
+      }
+    `;
+    document.head.appendChild(styleTag);
+
+    controlDiv.innerHTML = `
+      <div class="d-flex flex-column gap-2">
+        <div class="btn-group">
+          <button class="btn btn-sm px-3 py-1 btn-map ${this.selectionMode === 'origin' ? 'active' : ''} rounded-start-4" id="selectOrigin" style="font-size: 0.85rem;">
+            <i class="fas fa-map-marker-alt me-1"></i> Origen
+          </button>
+          <button class="btn btn-sm px-3 py-1 btn-map ${this.selectionMode === 'destination' ? 'active' : ''} rounded-end-4" id="selectDestination" style="font-size: 0.85rem;">
+            <i class="fas fa-flag me-1"></i> Destino
+          </button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-outline-danger px-3 py-1 rounded-start-4" id="clearOrigin" style="font-size: 0.85rem;">
+            <i class="fas fa-times me-1"></i> Borrar
+          </button>
+          <button class="btn btn-sm btn-outline-danger px-3 py-1 rounded-end-4" id="clearDestination" style="font-size: 0.85rem;">
+            <i class="fas fa-times me-1"></i> Borrar
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Agregar el panel al contenedor del mapa
+    mapContainer.style.position = 'relative';
+    mapContainer.appendChild(controlDiv);
+
+    // Agregar event listeners a los botones
+    document.getElementById('selectOrigin')?.addEventListener('click', () => {
+      this.setSelectionMode('origin');
+      this.updateButtonStates();
+    });
+    document.getElementById('selectDestination')?.addEventListener('click', () => {
+      this.setSelectionMode('destination');
+      this.updateButtonStates();
+    });
+    document.getElementById('clearOrigin')?.addEventListener('click', () => this.clearMarker('origin'));
+    document.getElementById('clearDestination')?.addEventListener('click', () => this.clearMarker('destination'));
+
+    this.directionsRenderer = new google.maps.DirectionsRenderer({
+      map: this.map,
+      suppressMarkers: true,
+      polylineOptions: {
+        strokeColor: '#9d36ff',
+        strokeWeight: 4
+      }
+    });
+
+    this.map.addListener('click', (e: google.maps.MapMouseEvent) => {
+      this.handleMapClick(e.latLng);
+    });
   }
 
-  private isPointInCDMX(latlng: any): boolean {
-    return latlng.lat >= this.CDMX_BOUNDS.south &&
-      latlng.lat <= this.CDMX_BOUNDS.north &&
-      latlng.lng >= this.CDMX_BOUNDS.west &&
-      latlng.lng <= this.CDMX_BOUNDS.east;
-  }
+  private updateButtonStates() {
+    const originBtn = document.getElementById('selectOrigin');
+    const destBtn = document.getElementById('selectDestination');
 
-  private async getAddressFromLatLng(latlng: any): Promise<string> {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${latlng.lat}&lon=${latlng.lng}&format=json`
-      );
-      const data = await response.json();
-      return data.display_name || `${latlng.lat}, ${latlng.lng}`;
-    } catch (error) {
-      console.error('Error obteniendo dirección:', error);
-      return `${latlng.lat}, ${latlng.lng}`;
+    if (originBtn && destBtn) {
+      originBtn.className = `btn btn-sm px-3 py-1 btn-map rounded-start-4 ${this.selectionMode === 'origin' ? 'active' : ''}`;
+      destBtn.className = `btn btn-sm px-3 py-1 btn-map rounded-end-4 ${this.selectionMode === 'destination' ? 'active' : ''}`;
     }
   }
 
-  private async handleMapClick(e: any) {
-    const latlng = e.latlng;
+  private handleMapClick(latLng: google.maps.LatLng | null) {
+    if (!latLng) return;
 
-    if (this.markers.length === 0) {
-      const address = await this.getAddressFromLatLng(latlng);
-      const startMarker = this.L.marker(latlng, {
-        icon: this.L.divIcon({
-          html: `<div style="background-color: #4CAF50; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-          className: 'custom-div-icon'
-        })
-      }).addTo(this.map);
-
-      this.markers.push(startMarker);
-      this.quoteForm.patchValue({
-        origin: address,
-        originCoords: `${latlng.lat},${latlng.lng}` // Guardamos las coordenadas en un campo oculto
-      });
-      startMarker.bindPopup(address).openPopup();
-
-    } else if (this.markers.length === 1) {
-      const address = await this.getAddressFromLatLng(latlng);
-      const endMarker = this.L.marker(latlng, {
-        icon: this.L.divIcon({
-          html: `<div style="background-color: #FF5252; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-          className: 'custom-div-icon'
-        })
-      }).addTo(this.map);
-
-      this.markers.push(endMarker);
-      this.quoteForm.patchValue({
-        destination: address,
-        destinationCoords: `${latlng.lat},${latlng.lng}` // Guardamos las coordenadas en un campo oculto
-      });
-      endMarker.bindPopup(address).openPopup();
-
-      // Dibujar la ruta
-      const points = this.markers.map(marker => marker.getLatLng());
-      const polyline = this.L.polyline(points, {
-        color: '#9d36ff',
-        weight: 4,
-        opacity: 0.7
-      }).addTo(this.map);
-
-      this.map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
-      this.updateRoute();
-    } else {
-      // Reset
-      this.markers.forEach(marker => this.map.removeLayer(marker));
-      this.markers = [];
-      this.map.eachLayer((layer: any) => {
-        if (layer instanceof this.L.Polyline) {
-          this.map.removeLayer(layer);
-        }
-      });
-      this.quoteForm.patchValue({
-        origin: '',
-        destination: '',
-        originCoords: '',
-        destinationCoords: ''
-      });
-      this.handleMapClick(e);
+    if (this.selectionMode === 'origin') {
+      this.setMarker('origin', latLng);
+    } else if (this.selectionMode === 'destination') {
+      this.setMarker('destination', latLng);
+      this.calculateRoute();
     }
   }
 
-  async updateRoute() {
-    const originCoords = this.quoteForm.get('originCoords')?.value;
-    const destinationCoords = this.quoteForm.get('destinationCoords')?.value;
+  private setMarker(type: 'origin' | 'destination', latLng: google.maps.LatLng) {
+    const marker = new google.maps.Marker({
+      position: latLng,
+      map: this.map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 10,
+        fillColor: type === 'origin' ? '#9d36ff' : '#8929ff',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2,
+      }
+    });
 
-    if (originCoords && destinationCoords) {
-      try {
-        const [originLat, originLng] = originCoords.split(',').map(Number);
-        const [destLat, destLng] = destinationCoords.split(',').map(Number);
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ location: latLng }, (results, status) => {
+      if (status === 'OK' && results && results[0]) {
+        const address = results[0].formatted_address;
 
-        const distance = this.calculateDistance(
-          { lat: originLat, lon: originLng },
-          { lat: destLat, lon: destLng }
-        );
-
-        const estimatedTimeMinutes = Math.ceil((distance / 40) * 60);
-        this.estimatedTime = estimatedTimeMinutes;
-
-        // Agregar popup con tiempo estimado
-        const hours = Math.floor(estimatedTimeMinutes / 60);
-        const minutes = estimatedTimeMinutes % 60;
-        const timeText = hours > 0
-          ? `${hours}h ${minutes}min`
-          : `${minutes}min`;
-
-        // Encontrar la línea (polyline) existente y agregar el popup
-        this.map.eachLayer((layer: any) => {
-          if (layer instanceof this.L.Polyline) {
-            const center = layer.getBounds().getCenter();
-            this.L.popup({
-              className: 'time-popup',
-              closeButton: false,
-              offset: [0, -10]
-            })
-              .setLatLng(center)
-              .setContent(`
-                <div class="estimated-time">
-                  <i class="fas fa-clock"></i>
-                  Tiempo estimado: ${timeText}
-                </div>
-              `)
-              .openOn(this.map);
+        if (type === 'origin') {
+          if (this.originMarker) this.originMarker.setMap(null);
+          this.originMarker = marker;
+          this.quoteForm.patchValue({
+            origin: address,
+            originCoords: latLng.toJSON()
+          });
+          // Cambiar automáticamente al modo de selección de destino
+          if (!this.destinationMarker) {
+            this.setSelectionMode('destination');
           }
-        });
-
-        this.calculateQuote(estimatedTimeMinutes);
-      } catch (error) {
-        console.error('Error al calcular la ruta:', error);
+        } else {
+          if (this.destinationMarker) this.destinationMarker.setMap(null);
+          this.destinationMarker = marker;
+          this.quoteForm.patchValue({
+            destination: address,
+            destinationCoords: latLng.toJSON()
+          });
+          this.calculateRoute();
+        }
       }
+    });
+  }
+
+  calculateRoute() {
+    const origin = this.quoteForm.get('originCoords')?.value;
+    const destination = this.quoteForm.get('destinationCoords')?.value;
+
+    if (origin && destination) {
+      const departureTime = new Date();
+
+      this.directionsService.route(
+        {
+          origin: origin,
+          destination: destination,
+          travelMode: google.maps.TravelMode.DRIVING,
+          drivingOptions: {
+            departureTime: departureTime,
+            trafficModel: google.maps.TrafficModel.BEST_GUESS
+          }
+        },
+        (response, status) => {
+          if (status === google.maps.DirectionsStatus.OK && response) {
+            this.directionsRenderer.setDirections(response);
+            const route = response.routes[0];
+            if (route && route.legs[0]) {
+              const duration = route.legs[0].duration_in_traffic?.value ?? route.legs[0].duration?.value ?? 0;
+              this.estimatedTime = duration / 60;
+
+              const durationText = route.legs[0].duration_in_traffic
+                ? route.legs[0].duration_in_traffic.text
+                : route.legs[0].duration?.text ?? '';
+
+              // Limpiar InfoWindow anterior si existe
+              if (this.activeInfoWindow) {
+                this.activeInfoWindow.close();
+              }
+
+              // Crear nuevo InfoWindow
+              this.activeInfoWindow = new google.maps.InfoWindow({
+                content: `
+                  <div style="padding: 10px;">
+                    <strong>Tiempo estimado:</strong> ${durationText}
+                    <br>
+                    <small style="color: #666;">Incluye tráfico actual</small>
+                  </div>
+                `
+              });
+
+              const bounds = new google.maps.LatLngBounds();
+              bounds.extend(route.legs[0].start_location);
+              bounds.extend(route.legs[0].end_location);
+              const midPoint = bounds.getCenter();
+              this.activeInfoWindow.setPosition(midPoint);
+              this.activeInfoWindow.open(this.map);
+
+              this.quoteForm.patchValue({
+                origin: route.legs[0].start_address,
+                destination: route.legs[0].end_address
+              });
+
+              this.calculateQuote(this.estimatedTime);
+            }
+          } else {
+            console.error('Error al calcular la ruta: ' + status);
+          }
+        }
+      );
     }
-  }
-
-  private calculateDistance(point1: { lat: number, lon: number }, point2: { lat: number, lon: number }): number {
-    const R = 6371; // Radio de la Tierra en km
-    const dLat = this.deg2rad(point2.lat - point1.lat);
-    const dLon = this.deg2rad(point2.lon - point1.lon);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.deg2rad(point1.lat)) * Math.cos(this.deg2rad(point2.lat)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distancia en km
-  }
-
-  private deg2rad(deg: number): number {
-    return deg * (Math.PI / 180);
   }
 
   calculateQuote(durationInMinutes?: number) {
@@ -304,7 +309,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    // Usar el tiempo estimado del mapa si está disponible
+    if (!durationInMinutes && !this.estimatedTime) {
+      this.calculateRoute();
+      return;
+    }
+
     if (!durationInMinutes && this.estimatedTime) {
       durationInMinutes = this.estimatedTime;
     }
@@ -314,66 +323,65 @@ export class HomeComponent implements OnInit, AfterViewInit {
       const hourlyRate = hours * this.BASE_RATE_PER_HOUR;
       const total = hourlyRate + this.FIXED_RATE;
 
-      // Verificar si es horario nocturno (entre 22:00 y 6:00)
-      const time = this.quoteForm.get('time')?.value;
-      let nightCharge = 0;
-
-      if (time) {
-        const [hours24, minutes] = time.split(':').map(Number);
-        const isNightTime = hours24 >= 22 || hours24 < 6;
-        nightCharge = isNightTime ? total * 0.2 : 0;
-      }
-
-      // Aplicar cargo adicional según el tipo de vehículo
-      const serviceType = this.quoteForm.get('serviceType')?.value;
-      let vehicleCharge = 0;
-      if (serviceType === 'van') {
-        vehicleCharge = total * 0.15;
-      }
-
       this.quoteResult = {
         basePrice: hourlyRate,
         serviceCharge: this.FIXED_RATE,
-        distanceCharge: vehicleCharge,
-        nightCharge: nightCharge,
-        total: total + nightCharge + vehicleCharge
+        total: total
       };
     }
   }
 
-  requestQuote() {
-    // Implementar la lógica para solicitar el servicio
-    console.log('Solicitud de servicio enviada', this.quoteResult);
-    // Aquí puedes agregar la lógica para enviar la solicitud
-  }
-
   scrollToContact(event: Event) {
     event.preventDefault();
-    const contactSection = document.getElementById('contact');
-    if (contactSection) {
-      contactSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    const element = document.getElementById('contact');
+    element?.scrollIntoView({ behavior: 'smooth' });
   }
 
   scrollToQuote(event: Event) {
     event.preventDefault();
-    const quoteSection = document.getElementById('quote');
-    if (quoteSection) {
-      quoteSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    const element = document.getElementById('quote');
+    element?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  calculateRoute() {
-    // Implementa la lógica para calcular la ruta
-    console.log('Calculando ruta...');
-    // Aquí puedes agregar la lógica para calcular la ruta
+  setSelectionMode(mode: 'origin' | 'destination') {
+    this.selectionMode = mode;
+    this.updateButtonStates();
   }
 
-  ngOnDestroy() {
-    if (this.map) {
-      this.map.remove();
-      this.mapInitialized = false;
-      this.markers = [];
+  clearMarker(type: 'origin' | 'destination') {
+    if (type === 'origin') {
+      if (this.originMarker) {
+        this.originMarker.setMap(null);
+        this.originMarker = null;
+      }
+      this.quoteForm.patchValue({
+        origin: '',
+        originCoords: ''
+      });
+    } else {
+      if (this.destinationMarker) {
+        this.destinationMarker.setMap(null);
+        this.destinationMarker = null;
+      }
+      this.quoteForm.patchValue({
+        destination: '',
+        destinationCoords: ''
+      });
     }
+
+    // Limpiar la ruta
+    if (this.directionsRenderer) {
+      this.directionsRenderer.set('directions', null);
+    }
+
+    // Limpiar el InfoWindow
+    if (this.activeInfoWindow) {
+      this.activeInfoWindow.close();
+      this.activeInfoWindow = null;
+    }
+
+    // Reiniciar valores de cotización
+    this.quoteResult = null;
+    this.estimatedTime = 0;
   }
 }
