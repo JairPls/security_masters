@@ -48,6 +48,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     if (this.isBrowser) {
       this.loadGoogleMapsScript().then(() => {
         this.initializeMap();
+        this.initializeAutocomplete();
         this.directionsService = new google.maps.DirectionsService();
         this.directionsRenderer = new google.maps.DirectionsRenderer({
           map: this.map,
@@ -373,5 +374,47 @@ export class HomeComponent implements OnInit, AfterViewInit {
     // Reiniciar valores de cotización
     this.quoteResult = null;
     this.estimatedTime = 0;
+  }
+
+  private initializeAutocomplete() {
+    const originInput = document.getElementById('originInput') as HTMLInputElement;
+    const destinationInput = document.getElementById('destinationInput') as HTMLInputElement;
+
+    const cdmxBounds = new google.maps.LatLngBounds(
+      new google.maps.LatLng(19.1223, -99.3643), // Suroeste
+      new google.maps.LatLng(19.5928, -98.9400)  // Noreste
+    );
+
+    const originAutocomplete = new google.maps.places.Autocomplete(originInput, {
+      bounds: cdmxBounds,
+      strictBounds: true,
+      types: ['geocode'],
+      componentRestrictions: { country: 'mx' }
+    });
+
+    const destinationAutocomplete = new google.maps.places.Autocomplete(destinationInput, {
+      bounds: cdmxBounds,
+      strictBounds: true,
+      types: ['geocode'],
+      componentRestrictions: { country: 'mx' }
+    });
+
+    originAutocomplete.addListener('place_changed', () => {
+      const place = originAutocomplete.getPlace();
+      if (place.geometry && place.geometry.location) {
+        const latLng = place.geometry.location;
+        this.setMarker('origin', latLng);
+        this.map.setCenter(latLng);
+      }
+    });
+
+    destinationAutocomplete.addListener('place_changed', () => {
+      const place = destinationAutocomplete.getPlace();
+      if (place.geometry && place.geometry.location) {
+        const latLng = place.geometry.location;
+        this.setMarker('destination', latLng);
+        this.map.setCenter(latLng);
+      }
+    });
   }
 }

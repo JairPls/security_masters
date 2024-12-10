@@ -688,8 +688,8 @@
               <!-- Origen -->
               <div class="col-md-6 mb-3">
                 <label class="form-label">Origen</label>
-                <input type="text" class="form-control rounded-4" formControlName="origin"
-                  placeholder="Selecciona en el mapa el punto de origen" readonly>
+                <input type="text" id="originInput" class="form-control rounded-4" formControlName="origin"
+                  placeholder="Selecciona en el mapa el punto de origen">
                 <div class="text-danger small"
                   *ngIf="quoteForm.get('origin')?.touched && quoteForm.get('origin')?.invalid">
                   Selecciona un punto de origen en el mapa
@@ -699,8 +699,8 @@
               <!-- Destino -->
               <div class="col-md-6 mb-3">
                 <label class="form-label">Destino</label>
-                <input type="text" class="form-control rounded-4" formControlName="destination"
-                  placeholder="Selecciona en el mapa el punto de destino" readonly>
+                <input type="text" id="destinationInput" class="form-control rounded-4" formControlName="destination"
+                  placeholder="Selecciona en el mapa el punto de destino">
                 <div class="text-danger small"
                   *ngIf="quoteForm.get('destination')?.touched && quoteForm.get('destination')?.invalid">
                   Selecciona un punto de destino en el mapa
