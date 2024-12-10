@@ -20,12 +20,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
   basePrice: number = 0;
   private readonly BASE_RATE_PER_HOUR: number = 1500;
   private readonly FIXED_RATE: number = 800;
-  directionsService = new google.maps.DirectionsService();
-  directionsRenderer = new google.maps.DirectionsRenderer();
   originMarker: google.maps.Marker | null = null;
   destinationMarker: google.maps.Marker | null = null;
   selectionMode: 'origin' | 'destination' = 'origin';
   private activeInfoWindow: google.maps.InfoWindow | null = null;
+  directionsService!: google.maps.DirectionsService;
+  directionsRenderer!: google.maps.DirectionsRenderer;
 
   constructor(
     private fb: FormBuilder,
@@ -44,11 +44,19 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit() { }
-
   ngAfterViewInit() {
     if (this.isBrowser) {
       this.loadGoogleMapsScript().then(() => {
         this.initializeMap();
+        this.directionsService = new google.maps.DirectionsService();
+        this.directionsRenderer = new google.maps.DirectionsRenderer({
+          map: this.map,
+          suppressMarkers: true,
+          polylineOptions: {
+            strokeColor: '#9d36ff',
+            strokeWeight: 4
+          }
+        });
       }).catch(error => {
         console.error('Error loading Google Maps script:', error);
       });
@@ -236,15 +244,13 @@ export class HomeComponent implements OnInit, AfterViewInit {
     const destination = this.quoteForm.get('destinationCoords')?.value;
 
     if (origin && destination) {
-      const departureTime = new Date();
-
       this.directionsService.route(
         {
           origin: origin,
           destination: destination,
           travelMode: google.maps.TravelMode.DRIVING,
           drivingOptions: {
-            departureTime: departureTime,
+            departureTime: new Date(),
             trafficModel: google.maps.TrafficModel.BEST_GUESS
           }
         },
@@ -253,42 +259,26 @@ export class HomeComponent implements OnInit, AfterViewInit {
             this.directionsRenderer.setDirections(response);
             const route = response.routes[0];
             if (route && route.legs[0]) {
-              const duration = route.legs[0].duration_in_traffic?.value ?? route.legs[0].duration?.value ?? 0;
+              const duration = route.legs[0].duration_in_traffic?.value ?? 0;
               this.estimatedTime = duration / 60;
+              this.calculateQuote(duration / 60);
 
-              const durationText = route.legs[0].duration_in_traffic
-                ? route.legs[0].duration_in_traffic.text
-                : route.legs[0].duration?.text ?? '';
-
-              // Limpiar InfoWindow anterior si existe
+              // Mostrar el tiempo estimado en un InfoWindow
+              const infoWindowContent = `
+                <div style="padding: 10px;">
+                  <strong>Tiempo estimado:</strong> ${Math.ceil(this.estimatedTime)} minutos
+                  <br>
+                  <small style="color: #666;">Incluye tráfico actual</small>
+                </div>
+              `;
               if (this.activeInfoWindow) {
                 this.activeInfoWindow.close();
               }
-
-              // Crear nuevo InfoWindow
               this.activeInfoWindow = new google.maps.InfoWindow({
-                content: `
-                  <div style="padding: 10px;">
-                    <strong>Tiempo estimado:</strong> ${durationText}
-                    <br>
-                    <small style="color: #666;">Incluye tráfico actual</small>
-                  </div>
-                `
+                content: infoWindowContent,
+                position: route.legs[0].end_location
               });
-
-              const bounds = new google.maps.LatLngBounds();
-              bounds.extend(route.legs[0].start_location);
-              bounds.extend(route.legs[0].end_location);
-              const midPoint = bounds.getCenter();
-              this.activeInfoWindow.setPosition(midPoint);
               this.activeInfoWindow.open(this.map);
-
-              this.quoteForm.patchValue({
-                origin: route.legs[0].start_address,
-                destination: route.legs[0].end_address
-              });
-
-              this.calculateQuote(this.estimatedTime);
             }
           } else {
             console.error('Error al calcular la ruta: ' + status);
